@@ -1,0 +1,108 @@
+---
+###################
+# OpenSSL v1.1.0g #
+###################
+# Required by OpenJ9 for out-of-process JIT compilation aka JITasS
+
+- name: Test if OpenSSL v1.1.0g is installed
+  shell: openssl version | awk '{print $2}' | cut -c 1-5
+  when:
+    - (((ansible_distribution == "RedHat" or ansible_distribution == "CentOS") and (ansible_distribution_major_version == "6")) or ((ansible_distribution == "Ubuntu") and (ansible_distribution_major_version == "16")))
+    - ansible_architecture == "x86_64"
+  register: openssl_version
+  tags: openssl
+
+- name: Download OpenSSL v1.1.0g
+  get_url:
+    url: https://www.openssl.org/source/old/1.1.0/openssl-1.1.0g.tar.gz
+    dest: /tmp/openssl-1.1.0g.tar.gz
+    force: no
+    mode: 0755
+  when:
+    - (((ansible_distribution == "RedHat" or ansible_distribution == "CentOS") and (ansible_distribution_major_version == "6")) or ((ansible_distribution == "Ubuntu") and (ansible_distribution_major_version == "16")))
+    - ansible_architecture == "x86_64"
+    - ((openssl_version.stdout == '') or ((openssl_version.stdout != '') and (openssl_version.stdout | version_compare('1.1.0', operator='lt', strict=True))))
+  tags: openssl
+
+- name: Extract OpenSSL v1.1.0g
+  unarchive:
+    src: /tmp/openssl-1.1.0g.tar.gz
+    dest: /tmp
+    copy: False
+  when:
+    - (((ansible_distribution == "RedHat" or ansible_distribution == "CentOS") and (ansible_distribution_major_version == "6")) or ((ansible_distribution == "Ubuntu") and (ansible_distribution_major_version == "16")))
+    - ansible_architecture == "x86_64"
+    - ((openssl_version.stdout == '') or ((openssl_version.stdout != '') and (openssl_version.stdout | version_compare('1.1.0', operator='lt', strict=True))))
+  tags: openssl
+
+- name: Build and install OpenSSL v1.1.0g
+  shell: cd /tmp/openssl-1.1.0g && ./config && make && make install
+  when:
+    - (((ansible_distribution == "RedHat" or ansible_distribution == "CentOS") and (ansible_distribution_major_version == "6")) or ((ansible_distribution == "Ubuntu") and (ansible_distribution_major_version == "16")))
+    - ansible_architecture == "x86_64"
+    - ((openssl_version.stdout == '') or ((openssl_version.stdout != '') and (openssl_version.stdout | version_compare('1.1.0', operator='lt', strict=True))))
+  tags: openssl
+
+# Note: The installation directory is /usr/local.
+# Its libraries are installed in:
+# - /usr/local/lib64 on CentOS and RHEL 
+# - /usr/local/lib on Ubuntu.
+# /usr/local/lib and /usr/local/lib64 are not part of the LD_LIBRARY_PATH, thus create symlinks.
+
+- name: Set lib directory for CentOS 6 or RHEL 6
+  set_fact:
+    lib_dir: lib64
+  when:
+    - ((ansible_distribution == "RedHat" or ansible_distribution == "CentOS") and (ansible_distribution_major_version == "6"))
+    - ansible_architecture == "x86_64"
+    - ((openssl_version.stdout == '') or ((openssl_version.stdout != '') and (openssl_version.stdout | version_compare('1.1.0', operator='lt', strict=True))))
+  tags: openssl
+
+- name: Set lib directory for Ubuntu 16
+  set_fact:
+    lib_dir: lib
+  when:
+    - (ansible_distribution == "Ubuntu" and ansible_distribution_major_version == "16")
+    - ansible_architecture == "x86_64"
+    - ((openssl_version.stdout == '') or ((openssl_version.stdout != '') and (openssl_version.stdout | version_compare('1.1.0', operator='lt', strict=True))))
+  tags: openssl
+
+- name: Create /usr/{{ lib_dir }}/libssl.so.1.1 symlink
+  file:
+    src: /usr/local/{{ lib_dir }}/libssl.so.1.1
+    dest: /usr/{{ lib_dir }}/libssl.so.1.1
+    owner: root
+    group: root
+    state: link
+  when:
+    - (((ansible_distribution == "RedHat" or ansible_distribution == "CentOS") and (ansible_distribution_major_version == "6")) or ((ansible_distribution == "Ubuntu") and (ansible_distribution_major_version == "16")))
+    - ansible_architecture == "x86_64"
+    - ((openssl_version.stdout == '') or ((openssl_version.stdout != '') and (openssl_version.stdout | version_compare('1.1.0', operator='lt', strict=True))))
+  tags: openssl
+
+- name: Create /usr/{{ lib_dir }}/libcrypto.so.1.1 symlink
+  file:
+    src: /usr/local/{{ lib_dir }}/libcrypto.so.1.1
+    dest: /usr/{{ lib_dir }}/libcrypto.so.1.1
+    owner: root
+    group: root
+    state: link
+  when:
+    - (((ansible_distribution == "RedHat" or ansible_distribution == "CentOS") and (ansible_distribution_major_version == "6")) or ((ansible_distribution == "Ubuntu") and (ansible_distribution_major_version == "16")))
+    - ansible_architecture == "x86_64"
+    - ((openssl_version.stdout == '') or ((openssl_version.stdout != '') and (openssl_version.stdout | version_compare('1.1.0', operator='lt', strict=True))))
+  tags: openssl
+
+- name: Remove downloaded packages for OpenSSL v1.1.0g
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - /tmp/openssl-1.1.0g.tar.gz
+    - /tmp/openssl-1.1.0g
+  ignore_errors: yes
+  when:
+    - (((ansible_distribution == "RedHat" or ansible_distribution == "CentOS") and (ansible_distribution_major_version == "6")) or ((ansible_distribution == "Ubuntu") and (ansible_distribution_major_version == "16")))
+    - ansible_architecture == "x86_64"
+    - ((openssl_version.stdout == '') or ((openssl_version.stdout != '') and (openssl_version.stdout | version_compare('1.1.0', operator='lt', strict=True))))
+  tags: openssl
