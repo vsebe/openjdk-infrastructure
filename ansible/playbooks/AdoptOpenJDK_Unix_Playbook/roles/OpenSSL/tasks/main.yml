@@ -1,0 +1,95 @@
+---
+###################
+# OpenSSL v1.1.0g #
+###################
+# Required by OpenJ9 for out-of-process JIT compilation aka JITasS
+
+- name: Test if OpenSSL v1.1.0g is installed
+  shell: openssl version | awk '{print $2}' | awk -F'-' '{print substr($0,0,5)}'
+  when:
+    - (ansible_distribution == "RedHat" or ansible_distribution == "CentOS")
+    - ansible_distribution_major_version == "6"
+    - ansible_architecture == "x86_64"
+  register: openssl_version
+  tags: openssl
+
+- name: Download OpenSSL v1.1.0g
+  get_url:
+    url: https://www.openssl.org/source/old/1.1.0/openssl-1.1.0g.tar.gz
+    dest: /tmp/openssl-1.1.0g.tar.gz
+    force: no
+    mode: 0755
+  when:
+    - (ansible_distribution == "RedHat" or ansible_distribution == "CentOS")
+    - ansible_distribution_major_version == "6"
+    - ansible_architecture == "x86_64"
+    - ((openssl_version.stdout == '') or ((openssl_version.stdout != '') and (openssl_version.stdout | version_compare('1.1.0', operator='lt', strict=True))))
+  tags: openssl
+
+- name: Extract OpenSSL v1.1.0g
+  unarchive:
+    src: /tmp/openssl-1.1.0g.tar.gz
+    dest: /tmp
+    copy: False
+  when:
+    - (ansible_distribution == "RedHat" or ansible_distribution == "CentOS")
+    - ansible_distribution_major_version == "6"
+    - ansible_architecture == "x86_64"
+    - ((openssl_version.stdout == '') or ((openssl_version.stdout != '') and (openssl_version.stdout | version_compare('1.1.0', operator='lt', strict=True))))
+  tags: openssl
+
+- name: Build and install OpenSSL v1.1.0g
+  shell: cd /tmp/openssl-1.1.0g && ./config && make && make install
+  when:
+    - (ansible_distribution == "RedHat" or ansible_distribution == "CentOS")
+    - ansible_distribution_major_version == "6"
+    - ansible_architecture == "x86_64"
+    - ((openssl_version.stdout == '') or ((openssl_version.stdout != '') and (openssl_version.stdout | version_compare('1.1.0', operator='lt', strict=True))))
+  tags: openssl
+
+# Note: The installation directory is /usr/local.
+# Its libraries are installed in /usr/local/lib64.
+# /usr/local/lib64 is not part of the LD_LIBRARY_PATH, thus create symlinks.
+
+- name: Create /usr/lib64/libssl.so.1.1 symlink
+  file:
+    src: /usr/local/lib64/libssl.so.1.1
+    dest: /usr/lib64/libssl.so.1.1
+    owner: root
+    group: root
+    state: link
+  when:
+    - (ansible_distribution == "RedHat" or ansible_distribution == "CentOS")
+    - ansible_distribution_major_version == "6"
+    - ansible_architecture == "x86_64"
+    - ((openssl_version.stdout == '') or ((openssl_version.stdout != '') and (openssl_version.stdout | version_compare('1.1.0', operator='lt', strict=True))))
+  tags: openssl
+
+- name: Create /usr/lib64/libcrypto.so.1.1 symlink
+  file:
+    src: /usr/local/lib64/libcrypto.so.1.1
+    dest: /usr/lib64/libcrypto.so.1.1
+    owner: root
+    group: root
+    state: link
+  when:
+    - (ansible_distribution == "RedHat" or ansible_distribution == "CentOS")
+    - ansible_distribution_major_version == "6"
+    - ansible_architecture == "x86_64"
+    - ((openssl_version.stdout == '') or ((openssl_version.stdout != '') and (openssl_version.stdout | version_compare('1.1.0', operator='lt', strict=True))))
+  tags: openssl
+
+- name: Remove downloaded packages for OpenSSL v1.1.0g
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - /tmp/openssl-1.1.0g.tar.gz
+    - /tmp/openssl-1.1.0g
+  ignore_errors: yes
+  when:
+    - (ansible_distribution == "RedHat" or ansible_distribution == "CentOS")
+    - ansible_distribution_major_version == "6"
+    - ansible_architecture == "x86_64"
+    - ((openssl_version.stdout == '') or ((openssl_version.stdout != '') and (openssl_version.stdout | version_compare('1.1.0', operator='lt', strict=True))))
+  tags: openssl
