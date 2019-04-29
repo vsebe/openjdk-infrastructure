@@ -3,7 +3,7 @@
 # Python3_Source #
 ##############
 - name: Test if python3 is installed on path
-  shell: python3 --version >/dev/null
+  shell: python3.7 --version >/dev/null
   ignore_errors: yes
   register: python3_installed
   tags:
@@ -92,4 +92,10 @@
     - /tmp/Python-3.7.3
   when:
     - (python3_installed.rc != 0 )
+  tags: python3_source
+
+- name: Install argparse module for Python 3.7
+  pip: name=argparse executable=pip3.7 state=latest
+  when:
+    - python3_installed.rc != 0
   tags: python3_source
