@@ -17,43 +17,36 @@
   # Roles #
   #########
   roles:
-    - Debug
-    - Version
-    - Common
-#    - autoconf
-    - curl
-    - Jenkins_User                # AdoptOpenJDK Infrastructure
-#    - freemarker                  # OpenJ9
-#    - ant                         # Testing
-#    - Ant-Contrib                 # Testing
-#    - GIT_Source
-    - CPAN
-#    - gmake
-#    - Docker                      # Testing
-#    - NVidia_Cuda_Toolkit         # OpenJ9
-#    - Superuser                   # AdoptOpenJDK Infrastructure
-    - Swap_File
-#    - Crontab
-    - NTP_TIME
-#    - gcc_48
-#    - gcc_7                       # OpenJ9
-#    - cmake                       # OpenJ9 / OpenJFX
-#    - ccache
-#    - {role: nasm, when: ansible_architecture == 'x86_64'} # OpenJ9
-#    - adoptopenjdk9               # JDK10 build bootstrap
-#    - adoptopenjdk10              # JDK11 build bootstrap
-#    - adoptopenjdk11              # JDK12 build bootstrap
-#    - adoptopenjdk12              # JDK13 build bootstrap
-    - role: local_srcinstall
-      src_tarball: https://github.com/protocolbuffers/protobuf/releases/download/v3.5.1/protobuf-cpp-3.5.1.tar.gz
-      installed_target: /usr/local/bin/protoc
-      when:
-        - (ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Ubuntu" or ansible_distribution == "SLES")
-        - ansible_architecture == "x86_64"
-#    - OpenSSL102                  # OpenJ9
-#    - Nagios_Plugins              # AdoptOpenJDK Infrastructure
-#    - Nagios_Master_Config        # AdoptOpenJDK Infrastructure
-#    - Nagios_Tunnel               # AdoptOpenJDK Infrastructure
+#     - Debug
+#     - Version
+#     - Common
+#     - curl
+#     - Jenkins_User                # AdoptOpenJDK Infrastructure
+#     - ant                         # Testing
+#     - Ant-Contrib                 # Testing
+##    - GIT_Source
+#    - CPAN
+    - gmake
+##    - NVidia_Cuda_Toolkit         # OpenJ9
+#    - Swap_File
+#    - NTP_TIME
+##    - cmake                       # OpenJ9 / OpenJFX
+##    - ccache
+##    - {role: nasm, when: ansible_architecture == 'x86_64'} # OpenJ9
+##    - adoptopenjdk9               # JDK10 build bootstrap
+##    - adoptopenjdk10              # JDK11 build bootstrap
+##    - adoptopenjdk11              # JDK12 build bootstrap
+##    - adoptopenjdk12              # JDK13 build bootstrap
+#    - role: local_srcinstall
+#      src_tarball: https://github.com/protocolbuffers/protobuf/releases/download/v3.5.1/protobuf-cpp-3.5.1.tar.gz
+#      installed_target: /usr/local/bin/protoc
+#      when:
+#        - (ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Ubuntu" or ansible_distribution == "SLES")
+#        - ansible_architecture == "x86_64"
+##    - OpenSSL102                  # OpenJ9
+##    - Nagios_Plugins              # AdoptOpenJDK Infrastructure
+##    - Nagios_Master_Config        # AdoptOpenJDK Infrastructure
+##    - Nagios_Tunnel               # AdoptOpenJDK Infrastructure
     - Clean_Up
-#    - Security
-#    - Vendor
+##    - Security
+##    - Vendor

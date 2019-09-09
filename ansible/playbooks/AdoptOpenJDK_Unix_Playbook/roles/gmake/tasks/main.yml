@@ -37,8 +37,24 @@
     - goodmake_installed.rc != 0
   tags: goodmake_source
 
+- name: Set numOfCPUs on {{ ansible_distribution }} {{ ansible_distribution_major_version}} {{ ansible_architecture }}
+  set_fact:
+    numOfCPUs: {{ ansible_processor_cores }}
+  when:
+    - ansible_architecture == "s390x"
+    - goodmake_installed.rc != 0
+  tags: goodmake_source
+
+- name: Set numOfCPUs on {{ ansible_distribution }} {{ ansible_distribution_major_version}} {{ ansible_architecture }}
+  set_fact:
+    numOfCPUs: {{ ansible_processor_vcpus }}
+  when:
+    - ansible_architecture != "s390x"
+    - goodmake_installed.rc != 0
+  tags: goodmake_source
+
 - name: Compile and install make 4.1 from source
-  shell: cd /tmp/make-4.1 && ./configure --prefix=/usr/local && make clean && make -j {{ ansible_processor_vcpus }} && make install
+  shell: cd /tmp/make-4.1 && ./configure --prefix=/usr/local && make clean && make -j {{ numOfCPUs }} && make install
   when:
     - (ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or (((ansible_distribution == "SLES" and ansible_distribution_major_version == "12") or (ansible_distribution == "Ubuntu" and ansible_distribution_major_version == "14")) and ansible_architecture == "x86_64"))
     - goodmake_installed.rc != 0
