@@ -125,20 +125,20 @@ setupFiles()
 setupGit()
 {
 	cd $WORKSPACE/adoptopenjdkPBTests
-	if [ "$branchName" == "" ]; then
+	if [ "$branchName" == "master" ]; then
 		echo "Detected as the master branch"
 		if [ ! -d "$folderName-master" ]; then
    			git clone $gitURL
 			mv $folderName $folderName-master
 		else
 			cd "$folderName-master"
-    			git pull $gitURL
+    			git pull 
 		fi
 	else
 		echo "Branch detected"
 		if [ ! -d "$folderName-$branchName" ]; then
   			git clone -b $branchName --single-branch $gitURL
-			mv $folderName "$folderName-$branchName"
+			mv $folderName $folderName-$branchName
 		else
 			cd "$folderName-$branchName"
 			git pull origin $branchName
@@ -146,50 +146,53 @@ setupGit()
 	fi
 }
 
-testBuild()
-{
-	vagrant ssh -c "git clone https://github.com/AdoptOpenJDK/openjdk-build"
-	vagrant ssh -c "cd /vagrant/pbTestScripts && ./buildJDK.sh"
-}
 
 # Takes the OS as arg 1
 startVMPlaybook()
 {
 	local OS=$1
-	if [ "$branchName" == "" ]; then
-		cd $WORKSPACE/adoptopenjdkPBTests/$folderName-master/ansible
-		branchName="master"
-	else
-		cd $WORKSPACE/adoptopenjdkPBTests/$folderName-$branchName/ansible
-	fi
+	cd $WORKSPACE/adoptopenjdkPBTests/$folderName-$branchName/ansible
 	ln -sf Vagrantfile.$OS Vagrantfile
+	# Copy the machine's ssh key for the VMs to use, after removing prior files
+	rm -f id_rsa.pub id_rsa
+	ssh-keygen -q -f $PWD/id_rsa -t rsa -N ''
 	vagrant up
-	# Remotely moves to the correct directory in the VM and builds the playbook. Then logs the VM's output to a file, in a separate directory
-	vagrant ssh -c "cd /vagrant/playbooks/AdoptOpenJDK_Unix_Playbook && sudo ansible-playbook --skip-tags adoptopenjdk,jenkins main.yml" 2>&1 | tee $WORKSPACE/adoptopenjdkPBTests/logFiles/$folderName.$branchName.$OS.log
+	# Generate hosts.unx file for Ansible to use, remove prior hosts.unx if there
+	[[ -f playbooks/AdoptOpenJDK_Unix_Playbook/hosts.unx ]] && rm playbooks/AdoptOpenJDK_Unix_Playbook/hosts.unx
+	cat playbooks/AdoptOpenJDK_Unix_Playbook/hosts.tmp | tr -d \\r | sort -nr | head -1 > playbooks/AdoptOpenJDK_Unix_Playbook/hosts.unx && rm playbooks/AdoptOpenJDK_Unix_Playbook/hosts.tmp
+	local vagrantIP=$(cat playbooks/AdoptOpenJDK_Unix_Playbook/hosts.unx)
+	# Remove IP from known_hosts if already found
+	grep -q "$vagrantIP" ~/.ssh/known_hosts && ssh-keygen -R $vagrantIP
+	sed -i -e "s/.*hosts:.*/- hosts: all/g" playbooks/AdoptOpenJDK_Unix_Playbook/main.yml
+	# Alter ansible.cfg to increase timeout and to specify which private key to use
+	# NOTE! Only works with GNU sed
+	! grep -q "timeout" ansible.cfg && sed -i -e 's/\[defaults\]/&\ntimeout = 30/g' ansible.cfg
+	! grep -q "private_key_file" ansible.cfg && sed -i -e 's/\[defaults\]/&\nprivate_key_file = id_rsa/g' ansible.cfg
+	ansible-playbook -i playbooks/AdoptOpenJDK_Unix_Playbook/hosts.unx -u vagrant -b --skip-tags adoptopenjdk,jenkins playbooks/AdoptOpenJDK_Unix_Playbook/main.yml 2>&1 | tee $WORKSPACE/adoptopenjdkPBTests/logFiles/$folderName.$branchName.$OS.log
 	echo The playbook finished at : `date +%T`
+	searchLogFiles $OS
 	if [[ "$testNativeBuild" = true ]]; then
-		testBuild
+		cd $WORKSPACE/adoptopenjdkPBTests/$folderName-$branchName/ansible
+		ansible all -i playbooks/AdoptOpenJDK_Unix_Playbook/hosts.unx -u vagrant -b -m raw -a "cd /vagrant/pbTestScripts && ./buildJDK.sh"
 		echo The build finished at : `date +%T`
 		if [[ "$runTest" = true ]]; then
-        	        vagrant ssh -c "cd /vagrant/pbTestScripts && ./testJDK.sh"
-	        	echo The test finished at : `date +%T`
+	        	ansible all -i playbooks/AdoptOpenJDK_Unix_Playbook/hosts.unx -u vagrant -b -m raw -a "cd /vagrant/pbTestScripts && ./testJDK.sh"
+			echo The test finished at : `date +%T`
 		fi
 	fi
 	if [[ "$vmHalt" = true ]]; then
 		vagrant halt
-	fi	
+	fi
 }
 
 startVMPlaybookWin()
 {
 	local OS=$1
-	if [ "$branchName" == "" ]; then
-		cd $WORKSPACE/adoptopenjdkPBTests/$folderName-master/ansible
-		branchName="master"
-	else
-		cd $WORKSPACE/adoptopenjdkPBTests/$folderName-$branchName/ansible
-	fi
+	cd $WORKSPACE/adoptopenjdkPBTests/$folderName-$branchName/ansible
 	ln -sf Vagrantfile.$OS Vagrantfile
+	# Remove the Hosts files if they're found
+	rm -f playbooks/AdoptOpenJDK_Windows_Playbook/hosts.tmp
+	rm -f playbooks/AdoptOpenJDK_Windows_Playbook/hosts.win
 	vagrant up
 	cat playbooks/AdoptOpenJDK_Windows_Playbook/hosts.tmp | tr -d \\r | sort -nr | head -1 > playbooks/AdoptOpenJDK_Windows_Playbook/hosts.win
 	echo "This is the content of hosts.win : " && cat playbooks/AdoptOpenJDK_Windows_Playbook/hosts.win
@@ -206,6 +209,7 @@ startVMPlaybookWin()
 	# Run the ansible playbook on the VM & logs the output.
 	ansible-playbook -i playbooks/AdoptOpenJDK_Windows_Playbook/hosts.win -u vagrant --skip-tags jenkins,adoptopenjdk,build playbooks/AdoptOpenJDK_Windows_Playbook/main.yml 2>&1 | tee $WORKSPACE/adoptopenjdkPBTests/logFiles/$folderName.$branchName.$OS.log
 	echo The playbook finished at : `date +%T`
+	searchLogFiles $OS
 	if [[ "$testNativeBuild" = true ]]; then
 		echo "Building a JDK"
 		# Runs the build script via ansible, as vagrant powershell gives error messages that ansible doesn't. 
@@ -235,13 +239,13 @@ destroyVM()
 	ls -la $WORKSPACE/adoptopenjdkPBTests
 }
 
-# Takes in OS as arg 1, branchName as arg 2
+# Takes in OS as arg 1
 searchLogFiles()
 {
 	local OS=$1
 	cd $WORKSPACE/adoptopenjdkPBTests/logFiles
 	echo
-	if grep -q 'failed=[1-9]' *$folderName.$branchName.$OS.log
+	if grep -q 'failed=[1-9]\|unreachable=[1-9]' *$folderName.$branchName.$OS.log
 	then
 		echo "$OS playbook failed"
 		exit 1;
@@ -252,7 +256,6 @@ searchLogFiles()
 	elif grep -q 'failed=0' *$folderName.$branchName.$OS.log
 	then
 		echo "$OS playbook succeeded"
-		exit 0;
 	else
 		echo "$OS playbook success is undetermined"
 		exit 1;
@@ -278,6 +281,7 @@ splitURL()
 		done
 	else
 		folderName=${array[@]: -1:1}
+		branchName="master"
 	fi
 }
 # var1 = GitURL, var2 = y/n for VM retention
@@ -299,8 +303,4 @@ do
 	then
 		destroyVM
 	fi
-done
-for OS in $vagrantOS
-do
-	searchLogFiles $OS
 done

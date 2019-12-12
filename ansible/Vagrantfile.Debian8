@@ -3,8 +3,9 @@
 
 $script = <<SCRIPT
 sudo apt-get install tree -y
-sudo apt-get install software-properties-common
+sudo apt-get install software-properties-common -y
 sudo apt-add-repository ppa:ansible/ansible
+cd /etc/apt/sources.list.d && sudo perl -p -i -e 's/jessie/trusty/g' ansible-ansible-jessie.list
 sudo apt-get update
 sudo apt-get install ansible -y
 sudo mkdir /ansible
@@ -25,20 +26,16 @@ echo "--------------------------------------------------------------------------
 echo "*** '$VAGRANT_MOUNT/playbooks/hosts' file for ansible-playbook contains ***"
 cat $VAGRANT_MOUNT/playbooks/hosts
 echo "---------------------------------------------------------------------------------------"
-# Get IPs of the VM, and output to shared folder
-ifconfig | grep "inet" | awk '{print $2}' | sed 's/addr://'  >> /vagrant/playbooks/AdoptOpenJDK_Unix_Playbook/hosts.tmp
-# Put the host machine's IP into the authorised_keys file on the VM
-[ -r /vagrant/id_rsa.pub ] && mkdir -p $HOME/.ssh && cat /vagrant/id_rsa.pub >> $HOME/.ssh/authorized_keys
 SCRIPT
 
 # 2 = version of configuration file for Vagrant 1.1+ leading up to 2.0.x
 Vagrant.configure("2") do |config|
 
-  config.vm.define :adoptopenjdkU18 do |adoptopenjdkU18|
-    adoptopenjdkU18.vm.box = "generic/ubuntu1804"
-    adoptopenjdkU18.vm.synced_folder ".", "/vagrant"
-    adoptopenjdkU18.vm.hostname = "adoptopenjdkU18"
-    adoptopenjdkU18.vm.network :private_network, type: "dhcp"
-    adoptopenjdkU18.vm.provision "shell", inline: $script, privileged: false
+  config.vm.define :adoptopenjdkD8 do |adoptopenjdkD8|
+    adoptopenjdkD8.vm.box = "debian/jessie64"
+    adoptopenjdkD8.vm.synced_folder ".", "/vagrant"
+    adoptopenjdkD8.vm.hostname = "adoptopenjdkD8"
+    adoptopenjdkD8.vm.network :private_network, type: "dhcp"
+    adoptopenjdkD8.vm.provision "shell", inline: $script, privileged: false
   end
 end

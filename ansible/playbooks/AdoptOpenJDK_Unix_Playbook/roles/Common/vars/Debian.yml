@@ -1,6 +1,6 @@
 ---
 ##########
-# Ubuntu #
+# Debian #
 ##########
 
 # Command Build Tool Packages
@@ -39,7 +39,6 @@ Build_Tool_Packages:
   - libxtst-dev
   - make
   - ntp
-  - openjdk-8-jdk
   - pigz
   - pkg-config
   - systemtap-sdt-dev
@@ -65,25 +64,19 @@ gcc_compiler:
   - g++-4.8
   - gcc-4.8
 
-Additional_Packages_Ubuntu16:
-  - xserver-xorg-legacy                 # Not actually sure if this is still needed
+Additional_Packages_Debian8:
   - libgstreamer0.10-dev                # OpenJFX prereq
   - libgstreamer-plugins-base0.10-dev   # OpenJFX prereq
   - openjdk-7-jdk
   - libmpfr4
   - libmpfr4-dbg
 
-Additional_Packages_Ubuntu18:
-  - libgstreamer1.0-dev                 # OpenJFX prereq
-  - libgstreamer-plugins-base1.0-dev    # OpenJFX prereq
-
-Additional_Build_Tools_x86:
+Additional_Build_Tools_x86_64:
   - zulu-9
   - libnuma-dev
   - numactl
   - gcc-7
   - g++-7
-  - gcc-multilib                        # a dependency required for executing a 32-bit C binary
 
 Additional_Build_Tools_ppc64le:
   - libnuma-dev

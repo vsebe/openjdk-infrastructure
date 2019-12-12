@@ -18,6 +18,7 @@ hosts:
 
       - softlayer:
           ubuntu1604-x64-3: {ip: 158.176.72.83, description: jckservices.adoptopenjdk.net}
+          vagrant-x64-1: {ip: 52.117.150.132, description: Bare metal machien to run VM playbook testing}
 
       - godaddy:
           ubuntu1604-x64-1: {ip: 160.153.247.225, description: git-hg/load relief for jenkins master}
@@ -69,6 +70,12 @@ hosts:
       - softlayer:
           win2012r2-x64-1: {ip: 37.58.103.195, user: Administrator}
           win2012r2-x64-2: {ip: 37.58.103.196, user: Administrator}
+
+  - perf:
+
+      - macstadium:
+          macos1015-x64-1: {ip: 208.83.1.221, user: Administrator}
+          macos1015-x64-2: {ip: 208.83.1.117, user: Administrator}
 
   - test:
 

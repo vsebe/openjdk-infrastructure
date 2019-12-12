@@ -1,19 +1,25 @@
 ---
 ##########
-# Ubuntu #
+# Debian #
 ##########
 
 #########################################
 # Configure Repos and Update the system #
 #########################################
 - name: Add the openjdk repository to apt
-  apt_repository: repo='ppa:openjdk-r/ppa'
+  apt_repository: repo='ppa:openjdk-r/ppa' update_cache=no
   when:
     - ansible_architecture != "armv7l"
   tags: patch_update
 
 - name: Add the ubuntu toolchain repository to apt
-  apt_repository: repo='ppa:ubuntu-toolchain-r/test'
+  apt_repository: repo='ppa:ubuntu-toolchain-r/test' update_cache=no
+  when:
+    - ansible_architecture != "armv7l"
+  tags: patch_update
+
+- name: Change Jessie to Trusty in the sources files
+  command: sed -i "s/jessie/trusty/g" /etc/apt/sources.list.d/ppa_openjdk_r_ppa_jessie.list  /etc/apt/sources.list.d/ppa_ubuntu_toolchain_r_test_jessie.list
   when:
     - ansible_architecture != "armv7l"
   tags: patch_update
@@ -72,9 +78,9 @@
     - (ansible_distribution_major_version != "9" and ansible_architecture != "armv7l")
   tags: build_tools
 
-- name: Install additional build tools for x86
+- name: Install additional build tools for x86_64
   package: "name={{ item }} state=latest"
-  with_items: "{{ Additional_Build_Tools_x86 }}"
+  with_items: "{{ Additional_Build_Tools_x86_64 }}"
   when:
     - ansible_architecture == "x86_64"
   tags: build_tools
@@ -110,40 +116,12 @@
     - ansible_architecture == "x86_64"
   tags: test_tools
 
-- name: Install additional Packages specific to Ubuntu 16
+- name: Install additional Packages specific to Debian 8
   package: "name={{ item }} state=latest"
-  with_items: "{{ Additional_Packages_Ubuntu16 }}"
+  with_items: "{{ Additional_Packages_Debian8 }}"
   when:
-    - ansible_distribution_major_version == "16"
-
-- name: Install additional Packages specific to Ubuntu 18
-  package: "name={{ item }} state=latest"
-  with_items: "{{ Additional_Packages_Ubuntu18 }}"
-  when:
-    - ansible_distribution_major_version == "18"
-
-####################
-# Set default Java #
-####################
-- name: Set default java version for x86_64
-  shell: update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
-  when:
-    - (ansible_distribution_major_version == "14" and ansible_architecture == "x86_64") or
-      (ansible_distribution_major_version == "16" and ansible_architecture == "x86_64")
-  tags: default_java
-
-- name: Set default java version for armv7l
-  shell: update-alternatives --set java /usr/lib/jvm/java-8-openjdk-armhf/jre/bin/java
-  when:
-    - ansible_architecture == "armv7l"
-  tags: default_java
-
-- name: Set default java version for ppc64le
-  shell: update-alternatives --set java /usr/lib/jvm/java-8-openjdk-ppc64el/jre/bin/java
-  when:
-    - ansible_distribution_major_version == "14"
-    - ansible_architecture == "ppc64le"
-  tags: default_java
+    - ansible_distribution_major_version == "8"
+  tags: test_tools
 
 ##################
 # Enable Locales #
